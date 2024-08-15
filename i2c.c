@@ -333,14 +333,19 @@ main (int argc, char *argv[])
   print_res_meas_rate (res_meas_rate);
 
   printf ("--------------------\n");
+  set_int_conf_reg (sd, 0x30);
+  printf ("Status: %hhx\n", get_status (sd));
+  printf ("Config Register: %hhx\n", get_int_conf_reg (sd));
 
+  struct timespec start, end;
   for (int i = 0; i < 10; i++)
     {
-      printf ("Status: %hhx\n", get_status (sd));
-      printf ("Config Register: %hhx\n", get_int_conf_reg (sd));
-      set_int_conf_reg (sd, 0x30);
+      clock_gettime (CLOCK_MONOTONIC, &start);
       printf ("raw data: %u\n", read_raw_data (sd));
       msleep (100);
+      clock_gettime (CLOCK_MONOTONIC, &end);
+      uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+      printf ("time diff: %luμs\n", delta_us);
     }
 
   // disconnect from FT230 board
