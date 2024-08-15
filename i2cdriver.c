@@ -388,13 +388,13 @@ i2c_read_buffer (i2c_handle sd, size_t s, uint8_t buffer[s])
 bool
 i2c_read_register (i2c_handle sd, uint8_t device, uint8_t reg, size_t count, uint8_t buffer[count])
 {
-  uint8_t buf[] = { device, reg };
   if (!i2c_start (sd, device, write_op))
     {
       dbgPrintExt ("Couldn't start write operation");
       return false;
     }
 
+  uint8_t buf[] = { reg };
   i2c_write_buffer (sd, sizeof buf, buf);
 
   if (!i2c_start (sd, device, read_op))
@@ -408,6 +408,8 @@ i2c_read_register (i2c_handle sd, uint8_t device, uint8_t reg, size_t count, uin
       return false;
     }
 
+  i2c_stop (sd);
+
   crc_update (sd, buffer, count);
   return true;
 }
@@ -418,16 +420,16 @@ i2c_write_register (i2c_handle sd, uint8_t device, uint8_t reg, size_t count, ui
   uint8_t write_buffer[count + 1];
   write_buffer[0] = reg;
   memcpy (write_buffer + 1, buffer, count);
-  i2c_start (sd, device, write_op);
-  {
-    dbgPrintExt ("Couldn't start write operation");
-    return false;
-  }
-  i2c_write_buffer (sd, count + 1, write_buffer);
-  {
-    dbgPrintExt ("Couldn't write buffer");
-    return false;
-  }
+  if (!i2c_start (sd, device, write_op))
+    {
+      dbgPrintExt ("Couldn't start write operation");
+      return false;
+    }
+  if (!i2c_write_buffer (sd, count + 1, write_buffer))
+    {
+      dbgPrintExt ("Couldn't write buffer");
+      return false;
+    }
   i2c_stop (sd);
 
   crc_update (sd, buffer, count);
